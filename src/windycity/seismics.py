@@ -119,8 +119,31 @@ def plot_slices(gdf: gpd.GeoDataFrame):
             cb.set_label("Vs (km/s)")
 
 
+def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
+    """Convert a GeoDataFrame column to a NumPy array."""
+    depths = np.sort(gdf["depth"].unique())
+    lons = np.sort(gdf["longitude"].unique())
+    lats = np.sort(gdf["latitude"].unique())
+
+    # Preallocate with NaN
+    Vs3D = np.full((len(depths), len(lats), len(lons)), np.nan)
+
+    # Fill array with exact matches (no interpolation)
+    for i, d in enumerate(depths):
+        subset = gdf[gdf["depth"] == d]
+        for _, row in subset.iterrows():
+            lon_idx = np.where(lons == row["longitude"])[0][0]
+            lat_idx = np.where(lats == row["latitude"])[0][0]
+            Vs3D[i, lat_idx, lon_idx] = row["Vs"]
+
+    return Vs3D
+
+
 if __name__ == "__main__":
     data_file = Path() / "data" / "seismics.txt"
     vs_gdf = load_vs_model(data_file)
     plot_slices(vs_gdf)
     plt.show()
+    Vs_array = to_array(vs_gdf, "Vs")
+    print("Vs 3D array shape (depth, lon, lat):", Vs_array.shape)
+    np.save(data_file.parent / "vs_model.npy", Vs_array)
