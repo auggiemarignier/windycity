@@ -126,6 +126,18 @@ def standardise(array: np.ndarray) -> np.ndarray:
     return (array - mean) / std
 
 
+def pad(array: np.ndarray, target_shape: tuple[int, int] = (96, 96)) -> np.ndarray:
+    """Pad a NumPy array with NaNs to reach the target shape."""
+    # Compute how much padding is needed per dimension
+    pad_h = target_shape[0] - array.shape[2]
+    pad_w  = target_shape[1] - array.shape[3]
+
+    pad_width = [(0, 0), (0, 0), (0, max(pad_h, 0)), (0, max(pad_w, 0))]
+
+    # Pad with zeros
+    return  np.pad(array, pad_width, mode='constant')
+
+
 def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
     """Convert a GeoDataFrame column to a NumPy array."""
     depths = np.sort(gdf["depth"].unique())
@@ -144,7 +156,8 @@ def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
             Vs3D[i, lat_idx, lon_idx] = row["Vs"]
         Vs3D[i, :, :] = standardise(Vs3D[i, :, :])
 
-    return Vs3D
+    Vs3D = Vs3D[:, np.newaxis, :, :]  # add channel dimension
+    return pad(Vs3D)
 
 
 if __name__ == "__main__":
