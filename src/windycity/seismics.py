@@ -119,6 +119,13 @@ def plot_slices(gdf: gpd.GeoDataFrame):
             cb.set_label("Vs (km/s)")
 
 
+def standardise(array: np.ndarray) -> np.ndarray:
+    """Standardise a NumPy array to zero mean and unit variance."""
+    mean = np.nanmean(array)
+    std = np.nanstd(array)
+    return (array - mean) / std
+
+
 def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
     """Convert a GeoDataFrame column to a NumPy array."""
     depths = np.sort(gdf["depth"].unique())
@@ -135,6 +142,7 @@ def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
             lon_idx = np.where(lons == row["longitude"])[0][0]
             lat_idx = np.where(lats == row["latitude"])[0][0]
             Vs3D[i, lat_idx, lon_idx] = row["Vs"]
+        Vs3D[i, :, :] = standardise(Vs3D[i, :, :])
 
     return Vs3D
 
