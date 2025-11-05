@@ -8,6 +8,7 @@
 import math
 from pathlib import Path
 import numpy as np
+import torch
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import Point
@@ -17,6 +18,8 @@ import matplotlib.tri as tri
 # Cartopy imports
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+
+from aion.modalities import LegacySurveyImage
 
 
 def load_vs_model(filepath: Path) -> gpd.GeoDataFrame:
@@ -130,12 +133,12 @@ def pad(array: np.ndarray, target_shape: tuple[int, int] = (96, 96)) -> np.ndarr
     """Pad a NumPy array with NaNs to reach the target shape."""
     # Compute how much padding is needed per dimension
     pad_h = target_shape[0] - array.shape[2]
-    pad_w  = target_shape[1] - array.shape[3]
+    pad_w = target_shape[1] - array.shape[3]
 
     pad_width = [(0, 0), (0, 0), (0, max(pad_h, 0)), (0, max(pad_w, 0))]
 
     # Pad with zeros
-    return  np.pad(array, pad_width, mode='constant')
+    return np.pad(array, pad_width, mode="constant")
 
 
 def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
@@ -158,6 +161,22 @@ def to_array(gdf: gpd.GeoDataFrame, column: str) -> np.ndarray:
 
     Vs3D = Vs3D[:, np.newaxis, :, :]  # add channel dimension
     return pad(Vs3D)
+
+
+def format_data_modalities(data, device="cpu"):
+    """Formats the input data into modality objects."""
+
+    # Helper function
+    def to_tensor(data_array, dtype="float32"):
+        return torch.tensor(np.array(data_array).astype(dtype), device=device)
+
+    # Create image modality
+    image = LegacySurveyImage(
+        flux=to_tensor(data),
+        bands=["DES-R"],
+    )
+
+    return image
 
 
 if __name__ == "__main__":
